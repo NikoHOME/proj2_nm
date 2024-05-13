@@ -58,7 +58,7 @@ int main() {
     //     2, 1 
     //     -1, 4
     //      -2, 1
-    //     -4, 1
+    //     -4, 1f
     // };
 
     // float64_t test1[] {
@@ -89,50 +89,48 @@ int main() {
     // return(0);
 
 
-    // printf("\n");
-    // DirectSolution *solution1 = a_matrix.solution_direct(&b_matrix);
-    // solution1->matrix->print(1,5);
-    // printf("Time spent on execution = %u seconds.\n", solution1->execution_time);
-    // delete solution1;
-
-    // printf("\n");
-    // IterativeSolution *solution2 = a_matrix.solution_jacobi(&b_matrix, 100, 1.0e-10);
-    // solution2->matrix->print(1,5);
-    // printf("Time spent on prep = %u seconds.\n", solution2->prep_time);
-    // printf("Time spent on execution = %u seconds.\n", solution2->execution_time);
-    // printf("Number of iterations = %u.\n", solution2->iterations);
-    // delete solution2;
-
-    // printf("\n");
-    // IterativeSolution *solution3 = a_matrix.solution_gauss_seidel(&b_matrix, 100, 1.0e-10);
-    // solution3->matrix->print(1,5);
-    // printf("Time spent on prep = %u seconds.\n", solution3->prep_time);
-    // printf("Time spent on execution = %u seconds.\n", solution3->execution_time);
-    // printf("Number of iterations = %u.\n", solution3->iterations);
-    // delete solution3;
-
+    printf("\n");
+    DirectSolution *solution1 = a_matrix.solution_direct(&b_matrix);
+    solution1->matrix->print(1,5);
+    printf("Time spent on execution = %u seconds.\n", solution1->execution_time);
+    delete solution1;
 
     printf("\n");
-    DirectSolution *solution4 = c_matrix.solution_direct(&b_matrix);
-    solution4->matrix->print(1,5);
-    printf("Time spent on execution = %u seconds.\n", solution4->execution_time);
-    delete solution4;
+    IterativeSolution *solution2 = a_matrix.solution_jacobi(&b_matrix, 100, 1.0e-10);
+    solution2->matrix->print(1,5);
+    printf("Time spent on execution = %u seconds.\n", solution2->execution_time);
+    printf("Number of iterations = %u.\n", solution2->iterations);
+    delete solution2;
 
     printf("\n");
-    IterativeSolution *solution5 = c_matrix.solution_jacobi(&b_matrix, 100, 1.0e-10);
-    solution5->matrix->print(1,5);
-    printf("Time spent on prep = %u seconds.\n", solution5->prep_time);
-    printf("Time spent on execution = %u seconds.\n", solution5->execution_time);
-    printf("Number of iterations = %u.\n", solution5->iterations);
-    delete solution5;
+    IterativeSolution *solution3 = a_matrix.solution_gauss_seidel(&b_matrix, 100, 1.0e-10);
+    solution3->matrix->print(1,5);
+    printf("Time spent on execution = %u seconds.\n", solution3->execution_time);
+    printf("Number of iterations = %u.\n", solution3->iterations);
+    delete solution3;
 
-    printf("\n");
-    IterativeSolution *solution6 = c_matrix.solution_gauss_seidel(&b_matrix, 100, 1.0e-10);
-    solution6->matrix->print(1,5);
-    printf("Time spent on prep = %u seconds.\n", solution6->prep_time);
-    printf("Time spent on execution = %u seconds.\n", solution6->execution_time);
-    printf("Number of iterations = %u.\n", solution6->iterations);
-    delete solution6;
+
+    // printf("\n");
+    // DirectSolution *solution4 = c_matrix.solution_direct(&b_matrix);
+    // solution4->matrix->print(1,5);
+    // printf("Time spent on execution = %u seconds.\n", solution4->execution_time);
+    // delete solution4;
+
+    // printf("\n");
+    // IterativeSolution *solution5 = c_matrix.solution_jacobi(&b_matrix, 100, 1.0e-6);
+    // solution5->matrix->print(1,5);
+    // printf("Time spent on prep = %u seconds.\n", solution5->prep_time);
+    // printf("Time spent on execution = %u seconds.\n", solution5->execution_time);
+    // printf("Number of iterations = %u.\n", solution5->iterations);
+    // delete solution5;
+
+    // printf("\n");
+    // IterativeSolution *solution6 = c_matrix.solution_gauss_seidel(&b_matrix, 100, 1.0e-10);
+    // solution6->matrix->print(1,5);
+    // printf("Time spent on prep = %u seconds.\n", solution6->prep_time);
+    // printf("Time spent on execution = %u seconds.\n", solution6->execution_time);
+    // printf("Number of iterations = %u.\n", solution6->iterations);
+    // delete solution6;
 
     return 0;
 }

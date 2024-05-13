@@ -350,40 +350,33 @@ float64_t MatrixReadOnly::norm() {
 IterativeSolution *MatrixReadOnly::solution_jacobi(MatrixReadOnly *input, uint32_t iter, float64_t err_norm) {
     time_point_t start, end;
 
-    start = get_time();
-
-    // D, U, L
-    MatrixShapeLookup diag(this, DIAGONAL);
-    MatrixShapeLookup tri_upper(this, UPPER_TRIANGLE);
-    MatrixShapeLookup tri_lower(this, LOWER_TRIANGLE);
-
-    // L + U
-    Matrix *tri_sum = tri_upper.clone(); 
-    tri_sum->add(&tri_lower);
-    // M = -(D \ (L + U))
-    Matrix *m_matrix = diag.solution_lu(tri_sum);
-    m_matrix->dot(-1);
-    // bm = D \ b
-    Matrix *bm_vector = diag.solution_lu(input);
-
-    Matrix *solution = new Matrix(1, this->height);
+    Matrix *solution = input->clone();
     Matrix *next_solution = solution->clone();
     Matrix *norm_matrix = this->clone();
     float64_t norm_val;
 
-    end = get_time();
     IterativeSolution *output = new IterativeSolution(solution, iter);
-    output->prep_time = calc_time_diff_in_second(start, end);
 
-    start = end;
+    start = get_time();
     uint32_t i = 0;
     for (; i < iter; i += 1) {
-        // x = M * x + bm
-        m_matrix->mutiply_into(solution, next_solution);
-        next_solution->add(bm_vector);
-        
-        std::swap(solution, next_solution);
+        next_solution->copy(input);
 
+        for (uint32_t y = 0; y < this->width; y += 1) {
+            for (uint32_t x = 0; x < this->width ; x += 1) {
+                if(x == y) {
+                    continue;
+                }
+                next_solution->set(0, y, next_solution->get(0, y) - this->get(x, y) * solution->get(0, x));
+            }
+        }
+
+        for (uint32_t diag = 0; diag < this->width; diag += 1) {
+            next_solution->set(0, diag, next_solution->get(0, diag) / this->get(diag, diag));
+        }
+    
+        std::swap(solution, next_solution);
+    
         // A * x - b
         this->mutiply_into(solution, norm_matrix);
         norm_matrix->sub(input);
@@ -400,9 +393,6 @@ IterativeSolution *MatrixReadOnly::solution_jacobi(MatrixReadOnly *input, uint32
     output->matrix = solution;
     output->iterations = i;
 
-    delete tri_sum;
-    delete m_matrix;
-    delete bm_vector;
     delete next_solution;
     delete norm_matrix;
     return output;
@@ -411,38 +401,28 @@ IterativeSolution *MatrixReadOnly::solution_jacobi(MatrixReadOnly *input, uint32
 
 IterativeSolution *MatrixReadOnly::solution_gauss_seidel(MatrixReadOnly *input, uint32_t iter, float64_t err_norm) {
     time_point_t start, end;
-
-    start = get_time();
     
-    // D, U, L
-    MatrixShapeLookup diag(this, DIAGONAL);
-    MatrixShapeLookup tri_upper(this, UPPER_TRIANGLE);
-    MatrixShapeLookup tri_lower(this, LOWER_TRIANGLE);
-    // D + L
-    Matrix *diag_tri_lower_sum = diag.clone();
-    diag_tri_lower_sum->add(&tri_lower);
-    // M = -((D + L) \ U)
-    Matrix *m_matrix = diag_tri_lower_sum->solution_lu(&tri_upper);
-    m_matrix->dot(-1);
-    // bm = (D + L) \ b
-    Matrix *bm_vector = diag_tri_lower_sum->solution_lu(input);
 
-    Matrix *solution = new Matrix(1, this->height);
-    Matrix *next_solution = solution->clone();
+    Matrix *solution = input->clone();
     Matrix *norm_matrix = this->clone();
     float64_t norm_val;
 
-    end = get_time();
     IterativeSolution *output = new IterativeSolution(solution, iter);
-    output->prep_time = calc_time_diff_in_second(start, end);
 
-    start = end;
+    start = get_time();
     uint32_t i = 0;
     for (; i < iter; i += 1) {
-        m_matrix->mutiply_into(solution, next_solution);
-        next_solution->add(bm_vector);
-        
-        std::swap(solution, next_solution);
+
+        for (uint32_t y = 0; y < this->height; y += 1) {
+            float64_t sum = 0.0;
+            for (uint32_t x = 0; x < this->width ; x += 1) {
+                if (x == y) {
+                    continue;
+                }
+                sum += this->get(x, y) * solution->get(0, x);
+            }
+            solution->set(0, y, (input->get(0, y) - sum) / this->get(y, y));
+        }
         
         this->mutiply_into(solution, norm_matrix);
         norm_matrix->sub(input);
@@ -460,10 +440,6 @@ IterativeSolution *MatrixReadOnly::solution_gauss_seidel(MatrixReadOnly *input, 
     output->matrix = solution;
     output->iterations = i;
 
-    delete diag_tri_lower_sum;
-    delete m_matrix;
-    delete bm_vector;
-    delete next_solution;
     delete norm_matrix;
     return output;
 }

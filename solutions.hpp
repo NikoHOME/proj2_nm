@@ -11,7 +11,6 @@ class IterativeSolution {
         float64_t *norm_history;
         uint32_t max_iterations;
         uint32_t iterations;
-        uint32_t prep_time;
         uint32_t execution_time;
 
         IterativeSolution(Matrix *matrix, uint32_t max_iterations);
