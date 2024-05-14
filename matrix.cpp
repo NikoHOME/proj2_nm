@@ -13,8 +13,8 @@ time_point_t get_time() {
     return fast_clock_t::now();
 }
 
-uint32_t calc_time_diff_in_second(time_point_t start, time_point_t end) {
-    return std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+float64_t calc_time_diff_in_second(time_point_t start, time_point_t end) {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0;
 }
 
 
@@ -116,10 +116,8 @@ Matrix *MatrixReadOnly::clone() {
 void Matrix::copy(MatrixReadOnly *matrix) {
     this->height = matrix->height;
     this->width = matrix->width;
-    this->content = (float64_t *)realloc(
-        this->content,
-        matrix->height * matrix->width * sizeof(float64_t)
-    );
+    delete[] this->content;
+    this->content = new float64_t[matrix->height * matrix->width];
     for (uint32_t x = 0; x < matrix->width; x += 1) {
         for (uint32_t y = 0; y < matrix->height; y += 1) {
             this->set(x, y, matrix->get(x, y));
@@ -179,7 +177,8 @@ void Matrix::mutiply(MatrixReadOnly *matrix) {
     if (this->height != m || this->width != n) {   
         this->height = m;
         this->width = n;
-        this->content = (float64_t *)realloc(this->content, m * n * sizeof(float64_t));
+        delete[] this->content;
+        this->content = new float64_t[m * n];
     }
 
     for (uint32_t x = 0; x < m; x += 1) {
@@ -197,14 +196,15 @@ void Matrix::mutiply(MatrixReadOnly *matrix) {
 void MatrixReadOnly::mutiply_into(MatrixReadOnly *matrix, Matrix *dest) {
     uint32_t m = this->height;
     uint32_t n = matrix->width;
-    uint32_t p = matrix->height;
+    uint32_t p = this->height;
 
     float64_t buffer;
 
     if (dest->height != m || dest->width != n) {    
         dest->height = m;
         dest->width = n;
-        dest->content = (float64_t *)realloc(dest->content, m * n * sizeof(float64_t));
+        delete[] dest->content;
+        dest->content = new float64_t[m * n];
     }
 
     for (uint32_t x = 0; x < m; x += 1) {
@@ -262,8 +262,8 @@ Matrix *MatrixReadOnly::solution(MatrixReadOnly *matrix) {
 Matrix *MatrixReadOnly::solution_lu(MatrixReadOnly *matrix) {
 
 
-    Matrix *L = new Matrix(this->width, this->height);
-    Matrix *U = new Matrix(this->width, this->height);
+    Matrix *L = new Matrix(this->width, this->height, 0.0);
+    Matrix *U = new Matrix(this->width, this->height, 0.0);
 
     float64_t sum;
 
@@ -290,7 +290,7 @@ Matrix *MatrixReadOnly::solution_lu(MatrixReadOnly *matrix) {
     }
     
     
-    Matrix *solution_l = new Matrix(this->width, this->height);
+    Matrix *solution_l = new Matrix(matrix->width, matrix->height);
     float64_t divider;
     for (uint32_t y = 0; y < this->width; y += 1){
         for (int32_t x = y - 1; x >= 0 ; x -= 1) {
@@ -305,7 +305,7 @@ Matrix *MatrixReadOnly::solution_lu(MatrixReadOnly *matrix) {
         }
     }
 
-    Matrix *solution_u = new Matrix(this->width, this->height);
+    Matrix *solution_u = new Matrix(matrix->width, matrix->height);
     for (int32_t y = this->width - 1; y >= 0; y -= 1){
         for (uint32_t x = y + 1; x < this->width ; x += 1) {
             for (int32_t k = 0; k < matrix->width ; k += 1) {
@@ -322,6 +322,7 @@ Matrix *MatrixReadOnly::solution_lu(MatrixReadOnly *matrix) {
 
     delete L;
     delete U;
+    delete solution_l;
     return solution_u;
 }
 
@@ -335,6 +336,7 @@ DirectSolution *MatrixReadOnly::solution_direct(MatrixReadOnly *matrix) {
     
     DirectSolution *output = new DirectSolution(solution);
     output->execution_time = calc_time_diff_in_second(start, end); 
+    output->matrix = solution;
 
     return output;
 }

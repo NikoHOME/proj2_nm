@@ -8,7 +8,7 @@ IterativeSolution::IterativeSolution(Matrix *matrix, uint32_t max_iterations) {
 
 IterativeSolution::~IterativeSolution() {
     delete this->matrix;
-    delete this->norm_history;
+    delete[] this->norm_history;
 }
 
 

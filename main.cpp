@@ -5,10 +5,13 @@
 #include <vector>
 #include <cmath>
 #include <chrono>
+#include <iostream>
+#include <fstream>
 
 #include "types.hpp"
 #include "matrix.hpp"
 #include "solutions.hpp"
+#include <string> 
 
 
 void make_three_arg_diagonal(Matrix *matrix, float64_t a1, float64_t a2, float64_t a3) {
@@ -31,6 +34,98 @@ void make_three_arg_diagonal(Matrix *matrix, float64_t a1, float64_t a2, float64
 }
 
 
+#define MAX_ITERATIONS 1000
+#define HIGH_ACCURACY 10e-12
+#define LOW_ACCURACY 10e-12
+
+
+
+class Solutions {
+    public:
+        DirectSolution **direct;
+        IterativeSolution **jacobi;
+        IterativeSolution **gauss_seidel;
+        uint32_t size;
+        Solutions(uint32_t size) {
+            this->size = size;
+            this->direct = new DirectSolution*[size];
+            this->jacobi = new IterativeSolution*[size];
+            this->gauss_seidel = new IterativeSolution*[size];
+        }
+        ~Solutions() {
+            for (uint32_t i = 0; i < this->size; i += 1) {
+                delete this->direct[i];
+                delete this->jacobi[i];
+                delete this->gauss_seidel[i];
+            }
+            delete[] this->direct;
+            delete[] this->jacobi;
+            delete[] this->gauss_seidel;
+        }
+        void solve(uint32_t index, MatrixReadOnly *matrix, MatrixReadOnly *vector) {
+            direct[index] = matrix->solution_direct(vector);
+            jacobi[index] = matrix->solution_jacobi(vector, MAX_ITERATIONS, HIGH_ACCURACY);
+            gauss_seidel[index] = matrix->solution_gauss_seidel(vector, MAX_ITERATIONS, HIGH_ACCURACY);
+        }
+
+        void print(uint32_t i) {
+            printf("SOLUTIONS: %d\n", i);
+            if (this->direct[i] != NULL) {
+                printf("Direct\n");
+                printf("Time spent on execution = %lf seconds.\n", this->direct[i]->execution_time);
+            }
+            if (this->jacobi[i] != NULL) {
+                printf("Jacobi\n");
+                printf("Time spent on execution = %lf seconds.\n", this->jacobi[i]->execution_time);
+                printf("Number of iterations = %u.\n", this->jacobi[i]->iterations);
+            }
+            if (this->gauss_seidel[i] != NULL) {
+                printf("Gauss Seidel\n");
+                printf("Time spent on execution = %lf seconds.\n", this->gauss_seidel[i]->execution_time);
+                printf("Number of iterations = %u.\n", this->gauss_seidel[i]->iterations);
+            }
+            printf("\n");
+        }
+
+        void print() {
+            for (uint32_t i = 0; i < this->size; i += 1) {
+                this->print(i);
+            }
+        }
+
+        void save() {
+            for (uint32_t i = 0; i < this->size; i += 1) {
+                
+                if (this->direct[i] != NULL) {
+                    std::string file_name = "save/data_direct" + std::to_string(i) + std::to_string(this->size) + ".txt";
+                    std::ofstream outFile(file_name);
+                    outFile << this->direct[i]->execution_time << "\n";
+                }
+                if (this->jacobi[i] != NULL) {
+                    std::string file_name = "save/data_jaco" + std::to_string(i) + std::to_string(this->size) + ".txt";
+                    std::ofstream outFile(file_name);
+                    outFile << this->jacobi[i]->execution_time << "\n";
+                    outFile << this->jacobi[i]->iterations << "\n";
+                    for (uint32_t j= 0; j < this->jacobi[i]->iterations; j += 1) {
+                        outFile << this->jacobi[i]->norm_history[j] << "\n";
+                    }
+                    
+                }
+                if (this->gauss_seidel[i] != NULL) {
+                    std::string file_name = "save/data_gaus" + std::to_string(i) + std::to_string(this->size) + ".txt";
+                    std::ofstream outFile(file_name);
+                    outFile << this->gauss_seidel[i]->execution_time << "\n";
+                    outFile << this->gauss_seidel[i]->iterations << "\n";
+                    for (uint32_t j= 0; j < this->gauss_seidel[i]->iterations; j += 1) {
+                        outFile << this->gauss_seidel[i]->norm_history[j] << "\n";
+                    }
+                }
+                
+            }
+        }
+        
+};
+
 int main() {
     uint32_t index = 193285;
 
@@ -45,92 +140,57 @@ int main() {
 
     Matrix a_matrix(N, N);
     Matrix b_matrix(1, N);
+    Matrix c_matrix(N, N);
 
-    make_three_arg_diagonal(&a_matrix, a1, a2, a3);
     for (uint32_t y = 0; y < b_matrix.height; y += 1) {
         b_matrix.set(0, y, sin(y * (f + 1)));
     }
 
-
-    Matrix c_matrix(N, N);
+    make_three_arg_diagonal(&a_matrix, a1, a2, a3);
     make_three_arg_diagonal(&c_matrix, 3, a2, a3);
-    // float64_t test2[] {
-    //     2, 1 
-    //     -1, 4
-    //      -2, 1
-    //     -4, 1f
-    // };
 
-    // float64_t test1[] {
-    //     2, -1, -2, 
-    //     -4, 2, 7, 2,
-    //     8, 3 ,2, 0,
-    //     1 , 2, 3 ,5
-    // };
+    DirectSolution *solv = c_matrix.solution_direct(&b_matrix);
+    Matrix *norm = c_matrix.clone();
+    c_matrix.mutiply_into(solv->matrix, norm);
+    norm->print(1,3);
+    norm->sub(&b_matrix);
+    norm->print(1,3);
+    float64_t norm_val = norm->norm();
 
-    // Matrix gauss_matrix_1(4, 4, test1);
-    // Matrix gauss_matrix_2(4, 4, test1);
-    // // make_three_arg_diagonal(&gauss_matrix_1, 3, a2, a3);
-    // // make_three_arg_diagonal(&gauss_matrix_2, 6, 1, a3);
-    // Matrix *gauss1 = gauss_matrix_1.solution_lu(&gauss_matrix_2);
-    // Matrix *gauss2 = gauss_matrix_1.solution(&gauss_matrix_2);
+    printf("%lf", norm_val);
 
+    //b_matrix.print();
+    return 0;
+    
+    
 
-    // Matrix *check1 = gauss_matrix_1.clone();
-    // check1->mutiply(gauss1);
-    // Matrix *check2 = gauss_matrix_1.clone();
-    // check2->mutiply(gauss2);
+    uint32_t e_matrices_count= 8;
 
-    // gauss1->print(); printf("\n");
-    // gauss2->print(); printf("\n");
+    Matrix **e_matrices = new Matrix*[e_matrices_count];
+    Matrix **e_b_matrices = new Matrix*[e_matrices_count];
 
-    // check1->print(); printf("\n");
-    // check2->print(); printf("\n");
-    // return(0);
+    uint32_t sizes[] = {100, 500, 1000, 2000, 3000, 4000, 5000, 6000};
+    
+    for (uint32_t i = 0; i < e_matrices_count; i += 1) {
+        e_matrices[i] = new Matrix(sizes[i], sizes[i]);
+        e_b_matrices[i] = new Matrix(1, sizes[i]);
+        make_three_arg_diagonal(e_matrices[i], a1, a2, a3);
+        for (uint32_t y = 0; y < sizes[i]; y += 1) {
+            e_b_matrices[i] -> set(0, y, sin(y * (f + 1)));
+        }
+    }
 
-
-    printf("\n");
-    DirectSolution *solution1 = a_matrix.solution_direct(&b_matrix);
-    solution1->matrix->print(1,5);
-    printf("Time spent on execution = %u seconds.\n", solution1->execution_time);
-    delete solution1;
-
-    printf("\n");
-    IterativeSolution *solution2 = a_matrix.solution_jacobi(&b_matrix, 100, 1.0e-10);
-    solution2->matrix->print(1,5);
-    printf("Time spent on execution = %u seconds.\n", solution2->execution_time);
-    printf("Number of iterations = %u.\n", solution2->iterations);
-    delete solution2;
-
-    printf("\n");
-    IterativeSolution *solution3 = a_matrix.solution_gauss_seidel(&b_matrix, 100, 1.0e-10);
-    solution3->matrix->print(1,5);
-    printf("Time spent on execution = %u seconds.\n", solution3->execution_time);
-    printf("Number of iterations = %u.\n", solution3->iterations);
-    delete solution3;
-
-
-    // printf("\n");
-    // DirectSolution *solution4 = c_matrix.solution_direct(&b_matrix);
-    // solution4->matrix->print(1,5);
-    // printf("Time spent on execution = %u seconds.\n", solution4->execution_time);
-    // delete solution4;
-
-    // printf("\n");
-    // IterativeSolution *solution5 = c_matrix.solution_jacobi(&b_matrix, 100, 1.0e-6);
-    // solution5->matrix->print(1,5);
-    // printf("Time spent on prep = %u seconds.\n", solution5->prep_time);
-    // printf("Time spent on execution = %u seconds.\n", solution5->execution_time);
-    // printf("Number of iterations = %u.\n", solution5->iterations);
-    // delete solution5;
-
-    // printf("\n");
-    // IterativeSolution *solution6 = c_matrix.solution_gauss_seidel(&b_matrix, 100, 1.0e-10);
-    // solution6->matrix->print(1,5);
-    // printf("Time spent on prep = %u seconds.\n", solution6->prep_time);
-    // printf("Time spent on execution = %u seconds.\n", solution6->execution_time);
-    // printf("Number of iterations = %u.\n", solution6->iterations);
-    // delete solution6;
-
+    Solutions solutions_a_c(2);
+    solutions_a_c.solve(0, &a_matrix, &b_matrix);
+    solutions_a_c.solve(1, &c_matrix, &b_matrix);
+    solutions_a_c.print();
+    solutions_a_c.save();
+    Solutions solutions_e(e_matrices_count);
+    for (uint32_t i = 0; i < e_matrices_count; i += 1) {
+        solutions_e.solve(i, e_matrices[i], e_b_matrices[i]);
+        solutions_e.print(i);
+    }
+    solutions_e.print();
+    solutions_e.save();
     return 0;
 }

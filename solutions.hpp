@@ -11,7 +11,7 @@ class IterativeSolution {
         float64_t *norm_history;
         uint32_t max_iterations;
         uint32_t iterations;
-        uint32_t execution_time;
+        float64_t execution_time;
 
         IterativeSolution(Matrix *matrix, uint32_t max_iterations);
         ~IterativeSolution();
@@ -20,7 +20,7 @@ class IterativeSolution {
 class DirectSolution {
     public:
         Matrix *matrix;
-        uint32_t execution_time;
+        float64_t execution_time;
         DirectSolution(Matrix *matrix);
         ~DirectSolution();
 };
